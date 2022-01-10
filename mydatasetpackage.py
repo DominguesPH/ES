@@ -3,58 +3,75 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import StandardScaler
 
 class MyDataset:
     '''The present class is used to load, analyze and preprocess a
     dataset. The original dataset is saved in "self.original_data",
-    while the manipulated one is saved in "self.data".
+    while the manipulated one is saved in "self.__data".
     Insert "filename" and "dataset_path" to initialize the class.'''
     def __init__(self, dataset_path, filename):
         self.dataset_path = dataset_path
         self.filename = filename
-        # self.header = 'No header set yet'
-        # self.data_shape = 'No'
 
-    def load_csv(self, skiprows=0, delimiter=';'):
+    def load_csv(self, skiprows=0, delimiter=';', flag_return_data=False, class_name=None):
         data = pd.read_csv(os.path.join(self.dataset_path, self.filename), \
             skiprows = skiprows, delimiter = delimiter)
-        self.data = data
-        self.header =  self.data.columns
-        self.data_shape = self.data.shape
+        self.__data = data
+        self.__header =  self.__data.columns
+        self.__data_shape = self.__data.shape
         print(self.filename+' dataset was loaded!')
-        print(self.data_shape)
-        return data
+        print(self.__data_shape)
+        if flag_return_data:
+            return self.__data
+        if class_name==None:
+            self.__class_name = self.__header[-1]
+        else:
+            self.__class_name = class_name
 
-    def load_txt(self, skiprows=0, delimiter=','):
+    def load_txt(self, skiprows=0, delimiter=',', flag_return_data=False, class_name=None):
         data = np.loadtxt(os.path.join(self.dataset_path, self.filename), \
             skiprows = skiprows, delimiter = delimiter)
-        self.header = np.arange(data.shape[1])
-        data = pd.DataFrame(data, columns=self.header)
-        self.data = data
-        self.data_shape = self.data.shape
+        self.__header = np.arange(data.shape[1])
+        data = pd.DataFrame(data, columns=self.__header)
+        self.__data = data
+        self.__data_shape = self.__data.shape
         print(self.filename+' dataset was loaded!')
-        print(self.data_shape)
-        return data
+        print(self.__data_shape)
+        if flag_return_data:
+            return self.__data
+        if class_name==None:
+            self.__class_name = self.__header[-1]
+        else:
+            self.__class_name = class_name
 
-    def change_header(self, header):
-        self.header = header
-        self.data.columns = self.header
-        return self.data
+    def change_header(self, header, flag_return_data=False):
+        self.__header = header
+        self.__data.columns = self.__header
+        if flag_return_data:
+            return self.__data
 
-    def separate_data_and_target(self, target_columns):
-        self.__target_columns_names = self.data.columns[target_columns]
-        target = self.data[self.__target_columns_names]
-        data_features = self.data.drop(columns=self.__target_columns_names)
-        print('Input data:', data_features.shape, '- Output class:', \
-            target.shape)
-        return data_features, target
+    def get_data(self):
+        return self.__data
+
+    def separate_data_and_target(self, target_columns, flag_return_data=True):
+        self.__target_columns_names = self.__data.columns[target_columns]
+        self.__target = self.__data[self.__target_columns_names]
+        self.__data = self.__data.drop(columns=self.__target_columns_names)
+        self.__header = self.__data.columns
+        self.__data_shape = self.__data.shape
+        print('Input data:', self.__data_shape, '- Output class:', \
+            self.__target.shape)
+        if flag_return_data:
+            return self.__data, self.__target
 
     def check_nan(self, flag_plots=False):
         print('Number of NaN values')
-        print(pd.DataFrame(self.data.isna().sum(), \
+        print(pd.DataFrame(self.__data.isna().sum(), \
             columns = ['NaN Values']).T)
-        self.__isnan = self.data.isna().astype('int')
-        self.__features_number = len(self.data.columns)
+        self.__isnan = self.__data.isna().astype('int')
+        self.__features_number = len(self.__data.columns)
         self.__plot_grid_number = int(np.ceil(np.sqrt(
             self.__features_number)))
         if flag_plots:
@@ -68,10 +85,10 @@ class MyDataset:
 
     def check_null(self, flag_plots=False):
         print('Number of Null values')
-        print(pd.DataFrame(self.data.isnull().sum(), \
+        print(pd.DataFrame(self.__data.isnull().sum(), \
             columns = ['Null Values']).T)
-        self.__isnull = self.data.isnull().astype('int')
-        self.__features_number = len(self.data.columns)
+        self.__isnull = self.__data.isnull().astype('int')
+        self.__features_number = len(self.__data.columns)
         self.__plot_grid_number = int(np.ceil(np.sqrt(
             self.__features_number)))
         if flag_plots:
@@ -112,10 +129,10 @@ class MyDataset:
                 plt.tight_layout()
 
     def get_float_attributes(self):
-        self.__dtypes = self.data.dtypes
+        self.__dtypes = self.__data.dtypes
         self.__float_features_number = (self.__dtypes=='float').sum()
-        self.__float_columns = self.data.columns[self.__dtypes=='float']
-        self.__float_data = self.data[self.__float_columns]
+        self.__float_columns = self.__data.columns[self.__dtypes=='float']
+        self.__float_data = self.__data[self.__float_columns]
         self.__plot_grid_number = int(np.ceil(np.sqrt(
             self.__float_features_number)))
 
@@ -132,14 +149,15 @@ class MyDataset:
             self.__upper_bound).sum(axis = 0)
         self.__total_outliers = self.__under_lower_bound + \
             self.__above_upper_bound
-        self.__outliers_percentual = self.__total_outliers/ self.data_shape[0]
+        self.__outliers_percentual = self.__total_outliers/ \
+            self.__data_shape[0]
     
     def remove_nan(self):
-        self.data = self.data.dropna()
-        return self.data
+        self.__data = self.__data.dropna()
+        return self.__data
 
     def remove_outliers(self, flag_print_check_outliers=False):
-        MyDataset.check_outliers(self, flag_print_output=\
+        MyDataset.check_outliers(self, flag_print_output = \
             flag_print_check_outliers)
         self.__under_lower_bound_boolean = (self.__float_data < \
             self.__lower_bound)
@@ -147,14 +165,37 @@ class MyDataset:
             self.__upper_bound)
         self.__no_outliers_boolean = (self.__under_lower_bound_boolean | \
             self.__above_upper_bound_boolean).sum(axis=1)==0
-        self.data = self.data[self.__no_outliers_boolean]
-        self.old_data_shape = self.data_shape
-        self.data_shape = self.data.shape
-        print('Dataset without outliers shape:', self.data_shape)
-        print('Reduced from ', self.old_data_shape,' to ', self.data_shape, \
-            '[-',np.round((self.old_data_shape[0] - self.data_shape[0])/ \
+        self.__data = self.__data[self.__no_outliers_boolean]
+        self.old_data_shape = self.__data_shape
+        self.__data_shape = self.__data.shape
+        print('Dataset without outliers shape:', self.__data_shape)
+        print('Reduced from ', self.old_data_shape,' to ', self.__data_shape, \
+            '[-',np.round((self.old_data_shape[0] - self.__data_shape[0])/ \
                 self.old_data_shape[0],decimals=3),'%]')
-        return self.data
+        return self.__data
+
+    def standardize(self, flag_update_data=False):
+        scaler = StandardScaler()
+        data = scaler.fit_transform(self.__data)
+        data = pd.DataFrame(data, columns = self.__header)
+        if flag_update_data:
+            self.__data = data
+
+        return data
+
+    def normalize(self, flag_update_data=False):
+        scaler = MinMaxScaler()
+        data = scaler.fit_transform(self.__data)
+        data = pd.DataFrame(data, columns = self.__header)
+        if flag_update_data:
+            self.__data = data
+
+        return data
+
+    def data_update(self, data):
+        self.__data = data
+        self.__header = self.__data.columns
+        self.__data_shape = self.__data.shape
 
     
 def grid_plot(data, class_name):
