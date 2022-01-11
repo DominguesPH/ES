@@ -5,6 +5,7 @@ import seaborn as sns
 import os
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.preprocessing import StandardScaler
+import time
 
 class MyDataset:
     '''The present class is used to load, analyze and preprocess a
@@ -172,7 +173,12 @@ class MyDataset:
         print('Reduced from ', self.old_data_shape,' to ', self.__data_shape, \
             '[-',np.round((self.old_data_shape[0] - self.__data_shape[0])/ \
                 self.old_data_shape[0],decimals=3),'%]')
-        return self.__data
+        if self.__class_name in self.__data.columns:
+            return self.__data.drop(self.__class_name), \
+                self.__target[self.__no_outliers_boolean]
+        else:
+            return self.__data, self.__target[self.__no_outliers_boolean]
+
 
     def standardize(self, flag_update_data=False):
         scaler = StandardScaler()
@@ -220,3 +226,24 @@ def scatter_plot(data, target, figure_size):
             ax[feat].legend(unique_classes)
     plt.tight_layout()
 
+def tic():
+    '''Functions used to compute the time spent during a process
+    (Homemade version of matlab tic and toc functions)'''
+    global start_time_for_tictoc
+    start_time_for_tictoc = time.time()
+
+def toc():
+    if 'start_time_for_tictoc' in globals():
+        print ('\nElapsed time is ')
+        print (str(time.time() - start_time_for_tictoc))
+        print('seconds.\n')
+    else:
+        print ('\nToc: start time not set\n')
+
+def return_toc():
+    import time
+    if 'start_time_for_tictoc' in globals():
+        tt = time.time() - start_time_for_tictoc
+    else:
+        print ('\nToc: start time not set\n')
+    return tt
