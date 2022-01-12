@@ -13,16 +13,16 @@ class MyDataset:
     while the manipulated one is saved in "self.__data".
     Insert "filename" and "dataset_path" to initialize the class.'''
     def __init__(self, dataset_path, filename):
-        self.dataset_path = dataset_path
-        self.filename = filename
+        self.__dataset_path = dataset_path
+        self.__filename = filename
 
     def load_csv(self, skiprows=0, delimiter=';', flag_return_data=False, class_name=None):
-        data = pd.read_csv(os.path.join(self.dataset_path, self.filename), \
+        data = pd.read_csv(os.path.join(self.__dataset_path, self.__filename), \
             skiprows = skiprows, delimiter = delimiter)
         self.__data = data
         self.__header =  self.__data.columns
         self.__data_shape = self.__data.shape
-        print(self.filename+' dataset was loaded!')
+        print(self.__filename+' dataset was loaded!')
         print(self.__data_shape)
         if flag_return_data:
             return self.__data
@@ -32,13 +32,13 @@ class MyDataset:
             self.__class_name = class_name
 
     def load_txt(self, skiprows=0, delimiter=',', flag_return_data=False, class_name=None):
-        data = np.loadtxt(os.path.join(self.dataset_path, self.filename), \
+        data = np.loadtxt(os.path.join(self.__dataset_path, self.__filename), \
             skiprows = skiprows, delimiter = delimiter)
         self.__header = np.arange(data.shape[1])
         data = pd.DataFrame(data, columns=self.__header)
         self.__data = data
         self.__data_shape = self.__data.shape
-        print(self.filename+' dataset was loaded!')
+        print(self.__filename+' dataset was loaded!')
         print(self.__data_shape)
         if flag_return_data:
             return self.__data
@@ -247,3 +247,19 @@ def return_toc():
     else:
         print ('\nToc: start time not set\n')
     return tt
+
+def append_value(dict_obj, key, value):
+    '''Function from https://bit.ly/3qj3kts '''
+    # Check if key exist in dict or not
+    if key in dict_obj:
+        # Key exist in dict.
+        # Check if type of value of key is list or not
+        if not isinstance(dict_obj[key], list):
+            # If type is not list then make it list
+            dict_obj[key] = [dict_obj[key]]
+        # Append the value in list
+        dict_obj[key].append(value)
+    else:
+        # As key is not in dict,
+        # so, add key-value pair
+        dict_obj[key] = value
